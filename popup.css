@@ -1,0 +1,101 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 400px;
+    margin: 0;
+    padding: 16px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+h1 {
+    font-size: 18px;
+    margin: 0 0 16px 0;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+input[type="number"] {
+    width: 60px;
+    padding: 4px;
+}
+
+button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3b78e7;
+}
+
+.hidden {
+display: none;
+}
+
+.progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #4285f4;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+#results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#linksList {
+    margin-top: 12px;
+}
+
+.link-item {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.link-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.link-url {
+    color: #1a0dab;
+    word-break: break-all;
+    margin-bottom: 4px;
+    }
+
+.link-snippet {
+    color: #545454;
+    font-size: 13px;
+}
+
+#copyButton, #downloadButton {
+    margin-right: 8px;
+    margin-bottom: 12px;
+}
