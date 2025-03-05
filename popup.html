@@ -7,6 +7,7 @@
 </head>
 <body>
     <div class="container">
+        <img src="tmoney.png" alt="TMoney Logo" style="width: 100%; max-width: 200px; margin: 0 auto; display: block;">
         <h1>TMoney Search Link Extractor</h1>
 
         <div class="controls">
@@ -21,15 +22,17 @@
 
     <div class="form-group">
         <div class="progress-container">
-            <progress id="progressBar" value="1" max="100"></progress>
+            <progress id="progressBar" value="0" max="100"></progress>
             <span id="progressText">0%</span>
         </div>
     </div>
 
     <div id="results" class="hidden">
         <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
-        <button id="copyButton">Copy All Links</button>
-        <button id="downloadButton">Download as CSV</button>
+        <div class="action-buttons">
+            <button id="copyButton">Copy All Links</button>
+            <button id="downloadButton">Download as CSV</button>
+        </div>
         <div id="linksList"></div>
     </div>
 

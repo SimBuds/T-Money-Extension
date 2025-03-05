@@ -5,7 +5,7 @@
     "description": "Extension for SEO needs of TDog and her Team.",
     "author": "Casey",
     "homepage_url": "https://caseyhsu.me/",
-    "permissions": ["activeTab", "scripting", "storage"],
+    "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
     "host_permissions": ["*://*.google.com/*"],
     "background": {
         "service_worker": "background.js"
@@ -19,7 +19,7 @@
         {
             "matches": ["*://*.google.com/search*"],
             "js": ["content.js"],
-            "run_at": "document_idle"
+            "run_at": "document_end"
         }
     ],
     "icons": {
