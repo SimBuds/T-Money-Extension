@@ -7,32 +7,53 @@
 </head>
 <body>
     <div class="container">
-        <img src="tmoney.png" alt="TMoney Logo" style="width: 100%; max-width: 200px; margin: 0 auto; display: block;">
+        <img src="tmoney.png" alt="TMoney Logo" style="width: 80px; margin: 0 auto 8px; display: block;">
         <h1>TMoney Search Link Extractor</h1>
 
         <div class="controls">
-            <label for="pages">Number of pages to extract (1-10):</label>
+            <label for="pages">Pages to extract (1-10):</label>
             <input type="number" id="pages" min="1" max="10" value="1">
-        </div>
-
-        <div class="form-group">
             <button id="extractButton">Extract Links</button>
         </div>
-    </div>
 
-    <div class="form-group">
         <div class="progress-container">
             <progress id="progressBar" value="0" max="100"></progress>
             <span id="progressText">0%</span>
         </div>
+        
+        <div class="inclusion-controls">
+            <span>Include in search results:</span>
+            <div class="inclusion-options">
+                <label class="inclusion-option">
+                    <input type="checkbox" id="includePAA">
+                    <span>People also ask</span>
+                </label>
+                <label class="inclusion-option">
+                    <input type="checkbox" id="includePlaces">
+                    <span>Places</span>
+                </label>
+                <label class="inclusion-option">
+                    <input type="checkbox" id="includeSitelinks">
+                    <span>Sitelinks</span>
+                </label>
+                <label class="inclusion-option">
+                    <input type="checkbox" id="includeFeatured">
+                    <span>Featured snippets</span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <div id="results" class="hidden">
-        <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
-        <div class="action-buttons">
-            <button id="copyButton">Copy All Links</button>
-            <button id="downloadButton">Download as CSV</button>
+        <div class="results-header">
+            <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
+            <div class="action-buttons">
+                <button id="copyButton">Copy</button>
+                <button id="downloadButton">CSV</button>
+                <button id="clearButton" class="secondary-button">Clear</button>
+            </div>
         </div>
+        
         <div id="linksList"></div>
     </div>
 

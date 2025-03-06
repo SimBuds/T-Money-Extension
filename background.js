@@ -2,6 +2,13 @@ let allLinks = [];
 let totalPages = 0;
 let currentPage = 0;
 let tabUpdateListener = null;
+let isExtractionRunning = false;
+let includedCategories = {
+    paa: false,
+    places: false,
+    sitelinks: false,
+    featured: false
+};
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -9,6 +16,28 @@ function sleep(ms) {
 
 // Add debugging logs
 console.log('Background script loaded');
+
+// Check for any in-progress extraction when the script loads
+chrome.storage.local.get(['extractionInProgress', 'extractionQuery', 'extractionTotalPages', 'extractionCurrentPage'], function(data) {
+    if (data.extractionInProgress) {
+        console.log('Found in-progress extraction. Resuming from page', data.extractionCurrentPage);
+        totalPages = data.extractionTotalPages || 0;
+        currentPage = data.extractionCurrentPage || 0;
+        
+        if (data.extractionQuery && totalPages > 0 && currentPage < totalPages) {
+            // Resume extraction
+            extractLinks(data.extractionQuery, currentPage);
+        } else {
+            // Reset incomplete extraction
+            console.log('Cannot resume extraction with incomplete data, resetting state');
+            resetExtractionState();
+        }
+    }
+});
+
+function resetExtractionState() {
+    chrome.storage.local.remove(['extractionInProgress', 'extractionQuery', 'extractionTotalPages', 'extractionCurrentPage']);
+}
 
 async function scrapePage(tabId, query, pageNum) {
     console.log(`Starting to scrape page ${pageNum} for query "${query}" on tab ${tabId}`);
@@ -68,7 +97,10 @@ async function scrapePage(tabId, query, pageNum) {
 
                 // Send message to content script
                 console.log('Sending extractLinks message to content script');
-                chrome.tabs.sendMessage(tabId, { action: 'extractLinks' }, (response) => {
+                chrome.tabs.sendMessage(tabId, { 
+                    action: 'extractLinks',
+                    includedCategories: includedCategories 
+                }, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error("Error sending message:", chrome.runtime.lastError);
                         resolve([]);
@@ -95,6 +127,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         allLinks = [];
         totalPages = request.pages;
         currentPage = 0;
+        isExtractionRunning = true;
+        
+        // Save inclusion preferences
+        if (request.includedCategories) {
+            includedCategories = request.includedCategories;
+            console.log('Using inclusion preferences:', includedCategories);
+        }
+        
+        // Save extraction state
+        chrome.storage.local.set({
+            extractionInProgress: true,
+            extractionQuery: request.query,
+            extractionTotalPages: totalPages,
+            extractionCurrentPage: currentPage,
+            includedCategories: includedCategories
+        });
         
         // Start the extraction process
         extractLinks(request.query);
@@ -104,15 +152,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-async function extractLinks(query) {
+async function extractLinks(query, startPage = 1) {
     try {
+        isExtractionRunning = true;
         console.log('Getting active tab for extraction');
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         console.log(`Active tab found: ${tab.id} (${tab.url})`);
         
-        for (currentPage = 1; currentPage <= totalPages; currentPage++) {
+        for (currentPage = startPage; currentPage <= totalPages; currentPage++) {
             // Update progress
             console.log(`Processing page ${currentPage} of ${totalPages}`);
+            
+            // Update extraction state
+            chrome.storage.local.set({
+                extractionCurrentPage: currentPage
+            });
+            
             chrome.runtime.sendMessage({ 
                 action: 'updateProgress', 
                 progress: (currentPage / totalPages) * 100 
@@ -122,7 +177,27 @@ async function extractLinks(query) {
             console.log(`Scraping page ${currentPage}`);
             const links = await scrapePage(tab.id, query, currentPage);
             console.log(`Found ${links.length} links on page ${currentPage}`);
-            allLinks = allLinks.concat(links);
+            
+            // Filter links based on inclusion preferences
+            const filteredLinks = links.filter(link => {
+                const category = link.category || 'organic';
+                
+                // Always include organic results
+                if (category === 'organic') {
+                    return true;
+                }
+                
+                // For non-organic results, only include if specifically enabled
+                if (includedCategories[category] === undefined) {
+                    return false; // If undefined, don't include
+                }
+                
+                return includedCategories[category] === true;
+            });
+            
+            console.log(`Keeping ${filteredLinks.length} links out of ${links.length} after applying inclusion preferences`);
+            console.log('Current inclusion settings:', includedCategories);
+            allLinks = allLinks.concat(filteredLinks);
             
             // Add a random delay between page navigations to avoid detection
             // Between 3-7 seconds
@@ -135,9 +210,22 @@ async function extractLinks(query) {
         
         console.log(`Extraction complete. Total links found: ${allLinks.length}`);
         
-        // Remove duplicates
-        const uniqueLinks = [...new Set(allLinks)];
+        // Remove duplicates by URL
+        const uniqueLinks = [];
+        const urlSet = new Set();
+        
+        for (const link of allLinks) {
+            if (!urlSet.has(link.url)) {
+                urlSet.add(link.url);
+                uniqueLinks.push(link);
+            }
+        }
+        
         console.log(`Unique links: ${uniqueLinks.length}`);
+        
+        // Clear extraction state
+        resetExtractionState();
+        isExtractionRunning = false;
         
         // Extraction complete, send all links back to popup
         console.log('Sending extractionComplete message to popup');
@@ -154,9 +242,26 @@ async function extractLinks(query) {
         
     } catch (error) {
         console.error("Error during extraction:", error);
+        
+        // If we have links collected, deduplicate them
+        let uniqueLinks = [];
+        if (allLinks.length > 0) {
+            const urlSet = new Set();
+            
+            for (const link of allLinks) {
+                if (!urlSet.has(link.url)) {
+                    urlSet.add(link.url);
+                    uniqueLinks.push(link);
+                }
+            }
+        }
+        
+        resetExtractionState();
+        isExtractionRunning = false;
+        
         chrome.runtime.sendMessage({ 
             action: 'extractionComplete', 
-            links: [...new Set(allLinks)] // Return what we have so far
+            links: uniqueLinks // Return what we have so far
         });
     }
 }
