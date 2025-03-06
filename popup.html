@@ -11,34 +11,30 @@
         <h1>TMoney Search Link Extractor</h1>
 
         <div class="controls">
-            <label for="pages">Pages to extract (1-10):</label>
-            <input type="number" id="pages" min="1" max="10" value="1">
-            <button id="extractButton">Extract Links</button>
+            <label for="pages" id="pagesLabel">Pages to extract (1-10):</label>
+            <input type="number" id="pages" name="pages" min="1" max="10" value="1" aria-labelledby="pagesLabel">
+            <button id="extractButton" type="button">Extract Links</button>
         </div>
 
-        <div class="progress-container">
+        <div class="progress-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
             <progress id="progressBar" value="0" max="100"></progress>
             <span id="progressText">0%</span>
         </div>
         
         <div class="inclusion-controls">
-            <span>Include in search results:</span>
-            <div class="inclusion-options">
-                <label class="inclusion-option">
-                    <input type="checkbox" id="includePAA">
+            <span id="inclusionHeading">Include in search results:</span>
+            <div class="inclusion-options" role="group" aria-labelledby="inclusionHeading">
+                <label class="inclusion-option" for="includePAA">
+                    <input type="checkbox" id="includePAA" name="includePAA">
                     <span>People also ask</span>
                 </label>
-                <label class="inclusion-option">
-                    <input type="checkbox" id="includePlaces">
+                <label class="inclusion-option" for="includePlaces">
+                    <input type="checkbox" id="includePlaces" name="includePlaces">
                     <span>Places</span>
                 </label>
-                <label class="inclusion-option">
-                    <input type="checkbox" id="includeSitelinks">
+                <label class="inclusion-option" for="includeSitelinks">
+                    <input type="checkbox" id="includeSitelinks" name="includeSitelinks">
                     <span>Sitelinks</span>
-                </label>
-                <label class="inclusion-option">
-                    <input type="checkbox" id="includeFeatured">
-                    <span>Featured snippets</span>
                 </label>
             </div>
         </div>
@@ -48,13 +44,13 @@
         <div class="results-header">
             <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
             <div class="action-buttons">
-                <button id="copyButton">Copy</button>
-                <button id="downloadButton">CSV</button>
-                <button id="clearButton" class="secondary-button">Clear</button>
+                <button id="copyButton" type="button">Copy</button>
+                <button id="downloadButton" type="button">CSV</button>
+                <button id="clearButton" type="button" class="secondary-button">Clear</button>
             </div>
         </div>
         
-        <div id="linksList"></div>
+        <div id="linksList" role="list" aria-label="Extracted links"></div>
     </div>
 
     <script src="popup.js"></script>

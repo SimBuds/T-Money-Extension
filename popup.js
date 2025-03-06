@@ -2,8 +2,7 @@ let extractedLinks = [];
 let includedCategories = {
     paa: false,
     places: false,
-    sitelinks: false,
-    featured: false
+    sitelinks: false
 };
 
 // Log when popup script is loaded
@@ -27,37 +26,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const includePAA = document.getElementById('includePAA');
     const includePlaces = document.getElementById('includePlaces');
     const includeSitelinks = document.getElementById('includeSitelinks');
-    const includeFeatured = document.getElementById('includeFeatured');
     
     // Log the DOM elements to ensure they're found
     console.log('Extract button found:', !!extractButton);
     console.log('Pages input found:', !!pagesInput);
     console.log('Clear button found:', !!clearButton);
     console.log('Include checkboxes found:', 
-        !!includePAA && !!includePlaces && !!includeSitelinks && !!includeFeatured);
+        !!includePAA && !!includePlaces && !!includeSitelinks);
 
     // Load saved data and update UI
     loadSavedData();
     
-    // Set up checkbox event handlers
+    // Set up checkbox event handlers with immediate UI update
     includePAA.addEventListener('change', function() {
         includedCategories.paa = this.checked;
         saveInclusionPreferences();
+        updateLinksUI(); // Update UI immediately when checkbox changes
     });
     
     includePlaces.addEventListener('change', function() {
         includedCategories.places = this.checked;
         saveInclusionPreferences();
+        updateLinksUI(); // Update UI immediately when checkbox changes
     });
     
     includeSitelinks.addEventListener('change', function() {
         includedCategories.sitelinks = this.checked;
         saveInclusionPreferences();
-    });
-    
-    includeFeatured.addEventListener('change', function() {
-        includedCategories.featured = this.checked;
-        saveInclusionPreferences();
+        updateLinksUI(); // Update UI immediately when checkbox changes
     });
 
     // Initialize with saved preferences if available
@@ -93,13 +89,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Load inclusion preferences if available
             if (data.includedCategories) {
                 console.log('Restoring inclusion preferences:', data.includedCategories);
-                includedCategories = data.includedCategories;
+                // Ensure we only set valid categories
+                if (typeof data.includedCategories === 'object') {
+                    // Initialize with defaults first
+                    includedCategories = {
+                        paa: false,
+                        places: false,
+                        sitelinks: false
+                    };
+                    
+                    // Then apply saved values for our existing categories only
+                    if ('paa' in data.includedCategories) includedCategories.paa = !!data.includedCategories.paa;
+                    if ('places' in data.includedCategories) includedCategories.places = !!data.includedCategories.places;
+                    if ('sitelinks' in data.includedCategories) includedCategories.sitelinks = !!data.includedCategories.sitelinks;
+                }
                 
                 // Update checkboxes to match saved preferences
                 includePAA.checked = includedCategories.paa;
                 includePlaces.checked = includedCategories.places;
                 includeSitelinks.checked = includedCategories.sitelinks;
-                includeFeatured.checked = includedCategories.featured;
             }
             
             if (data.extractedLinks && data.extractedLinks.length > 0) {
@@ -181,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'paa': return 'People also ask';
             case 'places': return 'Places';
             case 'sitelinks': return 'Sitelink';
-            case 'featured': return 'Featured';
             default: return 'Other';
         }
     }
@@ -378,15 +385,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 includedCategories = {
                     paa: false,
                     places: false,
-                    sitelinks: false,
-                    featured: false
+                    sitelinks: false
                 };
                 
                 // Update UI checkboxes
                 includePAA.checked = false;
                 includePlaces.checked = false;
                 includeSitelinks.checked = false;
-                includeFeatured.checked = false;
                 
                 linksList.innerHTML = '';
                 linkCount.textContent = '0';

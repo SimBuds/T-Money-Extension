@@ -17,17 +17,17 @@ function extractLinksFromPage() {
         console.log(`Found ${placesElements.length} 'Places' elements`);
         processCategoryElements(placesElements, links, 'places', processedUrls);
         
-        // === Featured snippets ===
-        const featuredElements = document.querySelectorAll('div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], div.IThcWe a[href]');
-        console.log(`Found ${featuredElements.length} featured snippet elements`);
-        processCategoryElements(featuredElements, links, 'featured', processedUrls);
-        
         // === Sitelinks ===
         const sitelinksElements = document.querySelectorAll('div.usJj9c a[href], div.fl a[href], table.AaVjTc a[href], div.St3GK a[href], div.KGu9hc a[href], div.byrV5b a[href], .hlcw0c div table a[href]');
         console.log(`Found ${sitelinksElements.length} sitelink elements`);
         processCategoryElements(sitelinksElements, links, 'sitelinks', processedUrls);
         
-        // === Main organic results (process after other categories to avoid miscategorization) ===
+        // === Featured snippets (now categorized as organic) ===
+        const featuredElements = document.querySelectorAll('div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], div.IThcWe a[href]');
+        console.log(`Found ${featuredElements.length} featured snippet elements (categorized as organic)`);
+        processCategoryElements(featuredElements, links, 'organic', processedUrls);
+        
+        // === Main organic results ===
         // Use more specific selectors to avoid overlap with other categories
         const organicSelectors = [
             'div#search div.g a[href]:not(.fl):not([data-local-attribute])',
@@ -163,11 +163,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return true;
                 }
                 
-                // For non-organic results, check if they should be included
+                // For non-organic categories, strictly check if they should be included
                 return request.includedCategories[category] === true;
             });
             
             console.log(`Filtered links from ${allLinks.length} to ${filteredLinks.length} based on inclusion preferences`);
+            
+            // Log what was kept and what was filtered out
+            const categories = {};
+            filteredLinks.forEach(link => {
+                categories[link.category] = (categories[link.category] || 0) + 1;
+            });
+            console.log('Categories kept after filtering:', categories);
         }
         
         console.log(`Sending ${filteredLinks.length} links back to background script`);

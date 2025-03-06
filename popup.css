@@ -432,9 +432,3 @@ button:disabled {
 .inclusion-option span {
     font-size: 12px;
 }
-
-.note {
-    color: #888;
-    margin-top: 2px;
-    font-style: italic;
-}

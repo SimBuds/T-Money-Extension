@@ -6,8 +6,7 @@ let isExtractionRunning = false;
 let includedCategories = {
     paa: false,
     places: false,
-    sitelinks: false,
-    featured: false
+    sitelinks: false
 };
 
 function sleep(ms) {
@@ -131,7 +130,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         // Save inclusion preferences
         if (request.includedCategories) {
-            includedCategories = request.includedCategories;
+            // Clone the object to avoid reference issues
+            includedCategories = {
+                paa: !!request.includedCategories.paa,
+                places: !!request.includedCategories.places, 
+                sitelinks: !!request.includedCategories.sitelinks
+            };
             console.log('Using inclusion preferences:', includedCategories);
         }
         
@@ -187,11 +191,7 @@ async function extractLinks(query, startPage = 1) {
                     return true;
                 }
                 
-                // For non-organic results, only include if specifically enabled
-                if (includedCategories[category] === undefined) {
-                    return false; // If undefined, don't include
-                }
-                
+                // For non-organic results, strictly check inclusion
                 return includedCategories[category] === true;
             });
             
