@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "TMoney Extensions",
-    "version": "0.1",
-    "description": "Extension for SEO needs of TDog and her Team.",
+    "version": "0.2",
+    "description": "Extension for the SEO needs of the BMO Team.",
     "author": "Casey",
     "homepage_url": "https://caseyhsu.me/",
     "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],

@@ -8,6 +8,7 @@ body {
     margin: 0;
     line-height: 1.4;
     overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .container {
@@ -16,6 +17,8 @@ body {
     padding: 12px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 h1 {
@@ -44,23 +47,27 @@ h2 {
 }
 
 .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
     justify-content: space-between;
+    width: 100%;
 }
 
 label {
-    margin-right: 8px;
-    font-size: 14px;
     flex: 1 1 auto;
-    min-width: 100px;
-    max-width: 100%;
+    min-width: 120px;
+    font-size: 14px;
+    margin-right: 8px;
 }
 
 input[type="number"] {
     width: 60px;
+    flex: 0 0 auto;
     padding: 6px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
 }
 
 button {
@@ -431,4 +438,24 @@ button:disabled {
 
 .inclusion-option span {
     font-size: 12px;
+}
+
+#brandLogo {
+    display: block;
+    width: 120px;
+    height: auto;
+    margin: 0 auto 12px;
+    border-radius: 5px;
+}
+
+.note {
+    color: #888;
+    margin-top: 5px;
+    font-style: italic;
+    text-align: center;
+}
+
+#extractButton {
+    flex: 0 0 auto;
+    min-width: 120px;
 }

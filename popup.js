@@ -214,13 +214,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 return true;
             }
             
-            // For non-organic categories, only include if specifically enabled
-            return includedCategories[category] === true;
+            // Explicitly check each category by name
+            if (category === 'paa' && includedCategories.paa === true) {
+                return true;
+            }
+            
+            if (category === 'places' && includedCategories.places === true) {
+                return true;
+            }
+            
+            if (category === 'sitelinks' && includedCategories.sitelinks === true) {
+                return true;
+            }
+            
+            // All other categories are excluded
+            return false;
         });
         
-        // Log for debugging
+        // Log detailed information for debugging
         console.log(`Filtered from ${links.length} to ${filteredLinks.length} links based on inclusion preferences`);
         console.log('Current inclusion preferences:', includedCategories);
+        
+        const categoryCounts = {};
+        links.forEach(link => {
+            const cat = link.category || 'organic';
+            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+        console.log('Before filtering counts:', categoryCounts);
+        
+        const filteredCounts = {};
+        filteredLinks.forEach(link => {
+            const cat = link.category || 'organic';
+            filteredCounts[cat] = (filteredCounts[cat] || 0) + 1;
+        });
+        console.log('After filtering counts:', filteredCounts);
         
         return filteredLinks;
     }

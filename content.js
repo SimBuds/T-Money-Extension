@@ -147,15 +147,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     if (request.action === 'extractLinks') {
         console.log('Extracting links as requested');
-        console.log('Received inclusion preferences:', request.includedCategories);
+        
+        // Log inclusion preferences
+        const preferences = request.includedCategories || { paa: false, places: false, sitelinks: false };
+        console.log('Received inclusion preferences:', preferences);
         
         // Extract all links
         const allLinks = extractLinksFromPage();
+        console.log('Initial category breakdown:');
+        logCategoryBreakdown(allLinks);
         
-        // Filter links based on inclusion preferences if provided
-        let filteredLinks = allLinks;
-        if (request.includedCategories) {
-            filteredLinks = allLinks.filter(link => {
+        // Filter links based on inclusion preferences
+        if (preferences) {
+            const filteredLinks = allLinks.filter(link => {
                 const category = link.category || 'organic';
                 
                 // Always include organic results
@@ -163,22 +167,56 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return true;
                 }
                 
-                // For non-organic categories, strictly check if they should be included
-                return request.includedCategories[category] === true;
+                // Explicitly check each category by name to avoid any issues
+                if (category === 'paa' && preferences.paa === true) {
+                    return true;
+                }
+                
+                if (category === 'places' && preferences.places === true) {
+                    return true;
+                }
+                
+                if (category === 'sitelinks' && preferences.sitelinks === true) {
+                    return true;
+                }
+                
+                // All other categories are excluded
+                return false;
             });
             
             console.log(`Filtered links from ${allLinks.length} to ${filteredLinks.length} based on inclusion preferences`);
+            console.log('Final category breakdown after filtering:');
+            logCategoryBreakdown(filteredLinks);
             
-            // Log what was kept and what was filtered out
-            const categories = {};
-            filteredLinks.forEach(link => {
-                categories[link.category] = (categories[link.category] || 0) + 1;
-            });
-            console.log('Categories kept after filtering:', categories);
+            console.log(`Sending ${filteredLinks.length} links back to background script`);
+            sendResponse({ links: filteredLinks });
+        } else {
+            // If no preferences, just return organic results
+            const organicOnly = allLinks.filter(link => link.category === 'organic');
+            console.log(`No preferences provided, returning only organic results (${organicOnly.length})`);
+            sendResponse({ links: organicOnly });
         }
-        
-        console.log(`Sending ${filteredLinks.length} links back to background script`);
-        sendResponse({ links: filteredLinks });
     }
     return true;
 });
+
+// Helper function to log category breakdown
+function logCategoryBreakdown(links) {
+    const categories = {};
+    links.forEach(link => {
+        const category = link.category || 'organic';
+        categories[category] = (categories[category] || 0) + 1;
+    });
+    
+    console.log('Category breakdown:', categories);
+    
+    // Log each category as a percentage
+    const total = links.length;
+    if (total > 0) {
+        console.log('Category percentages:');
+        for (const [category, count] of Object.entries(categories)) {
+            const percentage = (count / total * 100).toFixed(1);
+            console.log(`- ${category}: ${count} (${percentage}%)`);
+        }
+    }
+}

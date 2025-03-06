@@ -191,8 +191,21 @@ async function extractLinks(query, startPage = 1) {
                     return true;
                 }
                 
-                // For non-organic results, strictly check inclusion
-                return includedCategories[category] === true;
+                // Explicitly check each category by name to avoid any issues
+                if (category === 'paa' && includedCategories.paa === true) {
+                    return true;
+                }
+                
+                if (category === 'places' && includedCategories.places === true) {
+                    return true;
+                }
+                
+                if (category === 'sitelinks' && includedCategories.sitelinks === true) {
+                    return true;
+                }
+                
+                // All other categories are excluded
+                return false;
             });
             
             console.log(`Keeping ${filteredLinks.length} links out of ${links.length} after applying inclusion preferences`);
