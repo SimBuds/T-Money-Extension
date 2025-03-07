@@ -1,6 +1,6 @@
 body {
     width: 400px;
-    max-height: 580px;
+    max-height: 650px;
     padding: 12px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #333;
@@ -11,6 +11,7 @@ body {
     overflow-y: auto;
 }
 
+/* Main container styling with consolidated link rules */
 .container {
     background-color: white;
     border-radius: 8px;
@@ -19,6 +20,28 @@ body {
     margin-bottom: 12px;
     width: 100%;
     box-sizing: border-box;
+    max-height: none;
+    overflow: visible;
+}
+
+/* Link styling consolidated under container context */
+.container a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.container a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.container a:visited {
+    color: #8e44ad;
+}
+
+.container a:active {
+    color: #2c3e50;
 }
 
 h1 {
@@ -44,6 +67,8 @@ h2 {
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .controls {
@@ -53,6 +78,7 @@ h2 {
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    box-sizing: border-box;
 }
 
 label {
@@ -101,6 +127,7 @@ button:disabled {
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
 }
 
 #progressBar {
@@ -145,9 +172,11 @@ button:disabled {
     padding: 12px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-top: 12px;
-    max-height: 350px;
+    max-height: 420px;
     overflow-y: auto;
     overflow-x: hidden;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 #results button {
@@ -173,24 +202,82 @@ button:disabled {
 }
 
 #linksList {
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
     margin-top: 8px;
     border: 1px solid #eee;
     border-radius: 4px;
     padding: 4px;
     scrollbar-width: thin;
+    width: 100%;
+    box-sizing: border-box;
 }
 
+/* Improve scrollbar appearance */
+#linksList::-webkit-scrollbar {
+    width: 8px;
+}
+
+#linksList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#linksList::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#linksList::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Mobile-friendly smaller container padding */
+@media screen and (max-width: 420px) {
+    .container {
+        padding: 10px;
+    }
+    
+    #results {
+        padding: 10px;
+    }
+    
+    body {
+        padding: 8px;
+    }
+}
+
+/* Optimize action buttons placement */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Add transition effect to link items for smoother hover effects */
 .link-item {
-    padding: 5px 6px;
-    margin-bottom: 4px;
+    padding: 4px 6px;
+    margin-bottom: 3px;
     border-radius: 3px;
     background-color: #f5f5f5;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     border-left: 2px solid #2c3e50;
     position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make sure the results area is visible as soon as there are links */
+#results.hidden {
+    display: none;
+}
+
+#results:not(.hidden) {
+    display: block;
 }
 
 .link-item:last-child {
@@ -204,11 +291,14 @@ button:disabled {
 .link-title {
     font-weight: 600;
     color: #2c3e50;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    line-height: 1.2;
 }
 
 .link-url {
@@ -217,12 +307,8 @@ button:disabled {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 5px;
-    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .secondary-button {
@@ -248,7 +334,7 @@ button:disabled {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     flex-wrap: wrap;
 }
 
@@ -375,6 +461,8 @@ button:disabled {
     flex-direction: column;
     margin: 12px 0 5px;
     font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .inclusion-controls > span {
@@ -388,6 +476,8 @@ button:disabled {
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 6px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .inclusion-option {
@@ -399,6 +489,9 @@ button:disabled {
     border: 1px solid #ddd;
     cursor: pointer;
     transition: background-color 0.2s;
+    flex: 1 1 calc(33.33% - 8px);
+    min-width: 80px;
+    box-sizing: border-box;
 }
 
 .inclusion-option:hover {
@@ -453,9 +546,22 @@ button:disabled {
     margin-top: 5px;
     font-style: italic;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #extractButton {
     flex: 0 0 auto;
     min-width: 120px;
+}
+
+/* Add subtle highlight for better visual separation between links */
+.link-item:nth-child(odd) {
+    background-color: #f8f8f8;
+}
+
+/* Improve visibility of the extracted count */
+#linkCount {
+    font-weight: bold;
+    color: #3498db;
 }

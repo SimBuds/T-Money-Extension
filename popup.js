@@ -252,87 +252,125 @@ document.addEventListener('DOMContentLoaded', function() {
         return filteredLinks;
     }
 
-    // Modify the extraction process to send inclusion preferences to background script
+    // Modify the extract button click handler to properly handle responses
     extractButton.addEventListener('click', function() {
         console.log('Extract button clicked');
         
-        const pages = parseInt(pagesInput.value);
-        console.log('Pages to extract:', pages);
-        
-        if (isNaN(pages)) {
-            alert('Please enter a valid number');
-            return;
-        }
-        
-        if (pages < 1 || pages > 10) {
-            alert('Please enter a number between 1 and 10');
-            return;
-        }
-
-        // Reset UI
-        extractedLinks = [];
-        linksList.innerHTML = '';
-        resultsDiv.classList.add('hidden');
-        progressBar.value = 0;
-        progressText.textContent = '0%';
-        extractButton.disabled = true;
-        console.log('UI reset for extraction');
-
-        // Start extraction process
-        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            console.log('Got active tab:', tabs[0]?.url);
-            const currentTab = tabs[0];
-            
-            try {
-                const url = new URL(currentTab.url);
-                console.log('Parsed URL:', url.toString());
-                
-                // Check if the current tab is a Google search page
-                if (!url.hostname.includes('google.com') || !url.pathname.includes('/search')) {
-                    console.warn('Not on a Google search page');
-                    alert('Please navigate to a Google search page before extracting links');
-                    extractButton.disabled = false;
-                    return;
-                }
-
-                const query = url.searchParams.get('q');
-                console.log('Detected search query:', query);
-                
-                if (!query) {
-                    console.warn('No search query found in URL');
-                    alert('No search query detected on this page');
-                    extractButton.disabled = false;
-                    return;
-                }
-
-                // Save the current query
-                chrome.storage.local.set({ lastQuery: query });
-
-                // Send message to background script to start extraction
-                console.log('Sending startExtraction message to background script');
-                chrome.runtime.sendMessage(
-                    { 
-                        action: 'startExtraction', 
-                        pages: pages, 
-                        query: query,
-                        includedCategories: includedCategories
-                    },
-                    function(response) {
-                        if (chrome.runtime.lastError) {
-                            console.error('Error sending message to background script:', chrome.runtime.lastError);
-                            alert('Error starting extraction. Please try again.');
-                            extractButton.disabled = false;
-                        } else {
-                            console.log('Message sent successfully to background script');
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error('Error processing tab URL:', error);
-                alert('Error processing page URL. Please make sure you are on a valid Google search page.');
-                extractButton.disabled = false;
+        // Get the active tab
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            // Make sure we have a tab and it's a Google search page
+            if (tabs.length === 0) {
+                console.error('No active tab found');
+                alert('No active tab found. Please try again.');
+                return;
             }
+            
+            const activeTab = tabs[0];
+            const tabUrl = activeTab.url;
+            
+            if (!tabUrl.includes('google.com/search')) {
+                alert('Please navigate to a Google search page first.');
+                return;
+            }
+            
+            // Get the search query from the URL
+            const url = new URL(tabUrl);
+            const query = url.searchParams.get('q');
+            
+            if (!query) {
+                alert('No search query found. Please perform a search on Google first.');
+                return;
+            }
+            
+            console.log('Found search query:', query);
+            
+            // Clear previous results
+            extractedLinks = [];
+            resultsDiv.classList.add('hidden');
+            
+            // Show progress
+            progressBar.value = 0;
+            progressText.textContent = '0%';
+            
+            // Get number of pages to extract
+            const pagesToExtract = parseInt(pagesInput.value);
+            if (isNaN(pagesToExtract) || pagesToExtract < 1 || pagesToExtract > 10) {
+                alert('Please enter a valid number of pages (1-10).');
+                return;
+            }
+            
+            // Disable the button during extraction
+            extractButton.disabled = true;
+            
+            // Save the query and pages count
+            chrome.storage.local.set({
+                lastQuery: query,
+                pagesCount: pagesToExtract
+            });
+            
+            // Start the extraction process
+            console.log('Sending startExtraction message to background script');
+            chrome.runtime.sendMessage({
+                action: 'startExtraction',
+                query: query,
+                pages: pagesToExtract,
+                includedCategories: includedCategories
+            }, function(response) {
+                // This callback may or may not be called depending on how extraction proceeds
+                if (chrome.runtime.lastError) {
+                    console.log('Error starting extraction:', chrome.runtime.lastError);
+                    // Don't treat this as a fatal error - the background script might still be working
+                } else {
+                    console.log('Extraction started successfully:', response);
+                }
+            });
         });
+    });
+
+    // Add proper error handling to chrome.runtime.onMessage listener
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        console.log('Popup received message:', request);
+        
+        if (request.action === 'updateProgress') {
+            console.log('Updating progress:', request.progress);
+            progressBar.value = request.progress;
+            progressText.textContent = Math.round(request.progress) + '%';
+            
+            // Save progress in case popup is closed
+            chrome.storage.local.set({
+                extractionProgress: request.progress
+            });
+            
+            // Send response to close the message channel
+            sendResponse({received: true});
+        }
+        else if (request.action === 'extractionComplete') {
+            console.log('Extraction complete. Received', request.links.length, 'links');
+            
+            // Enable the extract button again
+            extractButton.disabled = false;
+            
+            // Clear progress
+            progressBar.value = 100;
+            progressText.textContent = '100%';
+            
+            // Save extracted links
+            extractedLinks = request.links;
+            chrome.storage.local.set({
+                extractedLinks: extractedLinks,
+                extractionProgress: 100
+            });
+            
+            // Update UI
+            updateLinksUI();
+            
+            // Send response to close the message channel
+            sendResponse({received: true});
+        }
+        
+        // Return false since we're sending response synchronously
+        // (Only return true if we're going to call sendResponse asynchronously)
+        return false;
     });
 
     // Copy all links to clipboard (filtered by inclusion settings)
@@ -435,33 +473,4 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Inclusion preferences saved:', includedCategories);
         });
     }
-
-    // Listen for progress updates and extraction completion
-    chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-        console.log('Popup received message:', message);
-        
-        if (message.action === 'updateProgress') {
-            const progress = message.progress;
-            console.log('Updating progress bar to:', progress);
-            progressBar.value = progress;
-            progressText.textContent = Math.round(progress) + '%';
-            
-            // Save progress for persistence
-            chrome.storage.local.set({ extractionProgress: progress });
-        } 
-        else if (message.action === 'extractionComplete') {
-            console.log('Extraction complete with', message.links?.length || 0, 'links');
-            extractedLinks = message.links || [];
-            
-            // Save the extracted links for persistence
-            chrome.storage.local.set({ 
-                extractedLinks: extractedLinks,
-                extractionProgress: 100 
-            });
-            
-            updateLinksUI();
-            extractButton.disabled = false;
-            console.log('UI updated with extraction results');
-        }
-    });
 });

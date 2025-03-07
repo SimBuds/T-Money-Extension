@@ -41,7 +41,7 @@ function resetExtractionState() {
 async function scrapePage(tabId, query, pageNum) {
     console.log(`Starting to scrape page ${pageNum} for query "${query}" on tab ${tabId}`);
     
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&start=${(pageNum - 1) * 10}`;
         let timeout;
 
@@ -59,6 +59,13 @@ async function scrapePage(tabId, query, pageNum) {
         
         console.log(`Updating tab with URL: ${searchUrl}`);
         chrome.tabs.update(tabId, { url: searchUrl }, async () => {
+            if (chrome.runtime.lastError) {
+                console.error('Error updating tab:', chrome.runtime.lastError);
+                clearTimeout(timeout);
+                reject(chrome.runtime.lastError);
+                return;
+            }
+            
             try {
                 // Check if page is already complete
                 const tab = await chrome.tabs.get(tabId);
@@ -148,12 +155,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             includedCategories: includedCategories
         });
         
-        // Start the extraction process
-        extractLinks(request.query);
+        // Start the extraction process asynchronously
+        extractLinks(request.query)
+            .then(() => {
+                // Ensure we send a response even if the extraction completes
+                sendResponse({ status: 'success' });
+            })
+            .catch((error) => {
+                console.error('Extraction error:', error);
+                sendResponse({ status: 'error', message: error.message });
+            });
         
         // This keeps the channel open for async operations
         return true;
     }
+
+    // For other message types, return false to close the channel immediately
+    return false;
 });
 
 async function extractLinks(query, startPage = 1) {
@@ -161,6 +179,13 @@ async function extractLinks(query, startPage = 1) {
         isExtractionRunning = true;
         console.log('Getting active tab for extraction');
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!tab) {
+            console.error('No active tab found');
+            isExtractionRunning = false;
+            throw new Error('No active tab found');
+        }
+        
         console.log(`Active tab found: ${tab.id} (${tab.url})`);
         
         for (currentPage = startPage; currentPage <= totalPages; currentPage++) {
@@ -172,10 +197,15 @@ async function extractLinks(query, startPage = 1) {
                 extractionCurrentPage: currentPage
             });
             
-            chrome.runtime.sendMessage({ 
-                action: 'updateProgress', 
-                progress: (currentPage / totalPages) * 100 
-            });
+            try {
+                chrome.runtime.sendMessage({ 
+                    action: 'updateProgress', 
+                    progress: (currentPage / totalPages) * 100 
+                });
+            } catch (err) {
+                console.log('Error sending progress update, popup may be closed:', err);
+                // Continue anyway - the popup might be closed
+            }
             
             // Scrape the current page
             console.log(`Scraping page ${currentPage}`);
@@ -240,41 +270,47 @@ async function extractLinks(query, startPage = 1) {
         resetExtractionState();
         isExtractionRunning = false;
         
-        // Extraction complete, send all links back to popup
-        console.log('Sending extractionComplete message to popup');
-        chrome.runtime.sendMessage({ 
-            action: 'extractionComplete', 
-            links: uniqueLinks
-        });
-        
-        // Return to the first results page
-        console.log('Returning to first results page');
-        chrome.tabs.update(tab.id, { 
-            url: `https://www.google.com/search?q=${encodeURIComponent(query)}` 
-        });
-        
-    } catch (error) {
-        console.error("Error during extraction:", error);
-        
-        // If we have links collected, deduplicate them
-        let uniqueLinks = [];
-        if (allLinks.length > 0) {
-            const urlSet = new Set();
-            
-            for (const link of allLinks) {
-                if (!urlSet.has(link.url)) {
-                    urlSet.add(link.url);
-                    uniqueLinks.push(link);
+        // Try to send the message safely
+        try {
+            // Extraction complete, send all links back to popup
+            console.log('Sending extractionComplete message to popup');
+            chrome.runtime.sendMessage({ 
+                action: 'extractionComplete', 
+                links: uniqueLinks
+            }, (response) => {
+                // Handle the case where popup is closed
+                if (chrome.runtime.lastError) {
+                    console.log('Error sending extractionComplete, popup may be closed:', chrome.runtime.lastError.message);
+                    // This is ok - the popup might be closed when extraction completes
+                } else {
+                    console.log('Popup acknowledged extraction completion:', response);
                 }
-            }
+            });
+        } catch (msgError) {
+            console.error('Failed to send extractionComplete message:', msgError);
+            // Store the results for when popup reopens
+            chrome.storage.local.set({
+                extractedLinks: uniqueLinks,
+                extractionProgress: 100
+            });
         }
         
+        // Return to the first results page if possible
+        try {
+            if (tab && tab.id) {
+                const firstPageUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                chrome.tabs.update(tab.id, { url: firstPageUrl });
+            }
+        } catch (navError) {
+            console.error('Error returning to first page:', navError);
+        }
+        
+        // Return successful extraction
+        return uniqueLinks;
+    } catch (finalError) {
+        console.error('Critical error in extraction completion:', finalError);
+        // Try to reset state in case of critical error
         resetExtractionState();
         isExtractionRunning = false;
-        
-        chrome.runtime.sendMessage({ 
-            action: 'extractionComplete', 
-            links: uniqueLinks // Return what we have so far
-        });
     }
 }
