@@ -2,7 +2,8 @@ let extractedLinks = [];
 let includedCategories = {
     paa: false,
     places: false,
-    sitelinks: false
+    sitelinks: false,
+    kp: false // Knowledge panel links - excluded by default
 };
 
 // Log when popup script is loaded
@@ -95,13 +96,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     includedCategories = {
                         paa: false,
                         places: false,
-                        sitelinks: false
+                        sitelinks: false,
+                        kp: false
                     };
                     
                     // Then apply saved values for our existing categories only
                     if ('paa' in data.includedCategories) includedCategories.paa = !!data.includedCategories.paa;
                     if ('places' in data.includedCategories) includedCategories.places = !!data.includedCategories.places;
                     if ('sitelinks' in data.includedCategories) includedCategories.sitelinks = !!data.includedCategories.sitelinks;
+                    if ('kp' in data.includedCategories) includedCategories.kp = !!data.includedCategories.kp;
                 }
                 
                 // Update checkboxes to match saved preferences
@@ -180,6 +183,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         resultsDiv.classList.remove('hidden');
+        
+        // Ensure results are visible by scrolling to them
+        setTimeout(() => {
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // If on a smaller screen, ensure the container shows the results
+            document.querySelector('.container').scrollTop = document.querySelector('.container').scrollHeight;
+        }, 100);
     }
     
     // Function to get readable category label
@@ -189,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'paa': return 'People also ask';
             case 'places': return 'Places';
             case 'sitelinks': return 'Sitelink';
+            case 'kp': return 'Knowledge Panel';
             default: return 'Other';
         }
     }
@@ -366,6 +378,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update UI
             updateLinksUI();
             
+            // Ensure results are visible by scrolling to them
+            setTimeout(() => {
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // If on a smaller screen, ensure the container shows the results
+                document.querySelector('.container').scrollTop = document.querySelector('.container').scrollHeight;
+            }, 100);
+            
             // Send response to close the message channel
             sendResponse({received: true});
         }
@@ -452,7 +472,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 includedCategories = {
                     paa: false,
                     places: false,
-                    sitelinks: false
+                    sitelinks: false,
+                    kp: false
                 };
                 
                 // Update UI checkboxes

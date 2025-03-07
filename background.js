@@ -6,7 +6,8 @@ let isExtractionRunning = false;
 let includedCategories = {
     paa: false,
     places: false,
-    sitelinks: false
+    sitelinks: false,
+    kp: false // Knowledge panel links - excluded by default
 };
 
 function sleep(ms) {
@@ -141,7 +142,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             includedCategories = {
                 paa: !!request.includedCategories.paa,
                 places: !!request.includedCategories.places, 
-                sitelinks: !!request.includedCategories.sitelinks
+                sitelinks: !!request.includedCategories.sitelinks,
+                kp: !!request.includedCategories.kp
             };
             console.log('Using inclusion preferences:', includedCategories);
         }
@@ -234,6 +236,11 @@ async function extractLinks(query, startPage = 1) {
                 // Handle PAA based on preference (strict check)
                 if (category === 'paa') {
                     return includedCategories.paa === true;
+                }
+                
+                // Handle Knowledge Panel based on preference (strict check)
+                if (category === 'kp') {
+                    return includedCategories.kp === true;
                 }
                 
                 // Exclude any other categories by default

@@ -39,21 +39,22 @@
             </div>
             <div class="note">
                 <small id="organicNote">* Organic results and featured snippets are always included</small>
+                <small id="excludedNote">* Knowledge panel links are excluded by default</small>
             </div>
         </div>
-    </div>
 
-    <div id="results" class="hidden">
-        <div class="results-header">
-            <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
-            <div class="action-buttons">
-                <button id="copyButton" type="button">Copy</button>
-                <button id="downloadButton" type="button">CSV</button>
-                <button id="clearButton" type="button" class="secondary-button">Clear</button>
+        <div id="results" class="hidden">
+            <div class="results-header">
+                <h2>Extracted Links (<span id="linkCount">0</span>)</h2>
+                <div class="action-buttons">
+                    <button id="copyButton" type="button">Copy</button>
+                    <button id="downloadButton" type="button">CSV</button>
+                    <button id="clearButton" type="button" class="secondary-button">Clear</button>
+                </div>
             </div>
+            
+            <div id="linksList" role="list" aria-label="Extracted links"></div>
         </div>
-        
-        <div id="linksList" role="list" aria-label="Extracted links"></div>
     </div>
 
     <script src="popup.js"></script>

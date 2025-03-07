@@ -13,15 +13,23 @@ function extractLinksFromPage() {
         document.querySelectorAll(
             'div.usJj9c, div.fl, table.AaVjTc, div.St3GK, div.KGu9hc, div.byrV5b, ' +
             '.hlcw0c div table, div.YkJ0Xd, div.FxLDp, div.v5jHUb, g-inner-card, ' +
-            'div.oIk2Cb, .kno-kp:not(.ruhjFe), div[data-sncf], div.IThcWe div[data-mt]'
+            'div.oIk2Cb, div[data-sncf], div.IThcWe div[data-mt]'
         ).forEach(container => sitelinkContainers.add(container));
         
+        // Identify knowledge panel containers separately
+        const knowledgePanelContainers = new Set();
+        document.querySelectorAll(
+            '.kno-kp, .knowledge-panel, .ifM9O, div[data-attrid], div[data-md], ' +
+            'div.WpKAof, div.liYKde'
+        ).forEach(container => knowledgePanelContainers.add(container));
+        
         console.log(`Identified ${sitelinkContainers.size} potential sitelink containers`);
+        console.log(`Identified ${knowledgePanelContainers.size} potential knowledge panel containers`);
         
         // === People also ask section ===
         const peopleAlsoAskElements = document.querySelectorAll('div.related-question-pair a[href]');
         console.log(`Found ${peopleAlsoAskElements.length} 'People also ask' elements`);
-        processCategoryElements(peopleAlsoAskElements, links, 'paa', processedUrls, sitelinkContainers);
+        processCategoryElements(peopleAlsoAskElements, links, 'paa', processedUrls, sitelinkContainers, knowledgePanelContainers);
         
         // === Places/Maps section ===
         // Updated selector for places elements to be more comprehensive
@@ -31,7 +39,16 @@ function extractLinksFromPage() {
             'div[data-hveid] div.rllt a[href], div.dbg0pd a[href], div[jscontroller="LdB9sd"] a[href]'
         );
         console.log(`Found ${placesElements.length} 'Places' elements`);
-        processCategoryElements(placesElements, links, 'places', processedUrls, sitelinkContainers);
+        processCategoryElements(placesElements, links, 'places', processedUrls, sitelinkContainers, knowledgePanelContainers);
+        
+        // === Knowledge Panel links ===
+        const knowledgePanelElements = document.querySelectorAll(
+            '.kno-kp a[href], .knowledge-panel a[href], div.ifM9O a[href], ' +
+            'div[data-attrid] a[href], div[data-md] a[href], div.WpKAof a[href], ' +
+            'div.liYKde a[href]'
+        );
+        console.log(`Found ${knowledgePanelElements.length} knowledge panel elements`);
+        processCategoryElements(knowledgePanelElements, links, 'kp', processedUrls, sitelinkContainers, knowledgePanelContainers);
         
         // === Sitelinks ===
         // Updated selector to include more potential sitelink patterns
@@ -39,16 +56,19 @@ function extractLinksFromPage() {
             'div.usJj9c a[href], div.fl a[href], table.AaVjTc a[href], div.St3GK a[href], ' +
             'div.KGu9hc a[href], div.byrV5b a[href], .hlcw0c div table a[href], ' + 
             'div.YkJ0Xd a[href], div.FxLDp a[href], div.v5jHUb a[href], ' +
-            'g-inner-card a[href], div.oIk2Cb a[href], .kno-kp a[href]:not(.ruhjFe), ' +
-            'div[data-sncf] a[href], div.IThcWe div[data-mt] a[href]'
+            'g-inner-card a[href], div.oIk2Cb a[href], div[data-sncf] a[href], ' +
+            'div.IThcWe div[data-mt] a[href]'
         );
         console.log(`Found ${sitelinksElements.length} sitelink elements`);
-        processCategoryElements(sitelinksElements, links, 'sitelinks', processedUrls, sitelinkContainers);
+        processCategoryElements(sitelinksElements, links, 'sitelinks', processedUrls, sitelinkContainers, knowledgePanelContainers);
         
         // === Featured snippets (now categorized as organic) ===
-        const featuredElements = document.querySelectorAll('div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], div.IThcWe a[href]:not([data-mt])');
+        const featuredElements = document.querySelectorAll(
+            'div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], ' +
+            'div.IThcWe a[href]:not([data-mt])'
+        );
         console.log(`Found ${featuredElements.length} featured snippet elements (categorized as organic)`);
-        processCategoryElements(featuredElements, links, 'organic', processedUrls, sitelinkContainers);
+        processCategoryElements(featuredElements, links, 'organic', processedUrls, sitelinkContainers, knowledgePanelContainers);
         
         // === Main organic results ===
         // Use more specific selectors to avoid overlap with other categories
@@ -62,19 +82,24 @@ function extractLinksFromPage() {
         const organicElements = document.querySelectorAll(organicSelectors);
         console.log(`Found ${organicElements.length} potential organic result elements`);
         
-        // Filter out elements that are within sitelink containers
+        // Filter out elements that are within sitelink or knowledge panel containers
         const trueOrganicElements = Array.from(organicElements).filter(element => {
-            // Check if this element is within any of our identified sitelink containers
+            // Check if this element is within any of our identified containers
             for (const container of sitelinkContainers) {
                 if (container.contains(element)) {
                     return false; // This is actually a sitelink
+                }
+            }
+            for (const container of knowledgePanelContainers) {
+                if (container.contains(element)) {
+                    return false; // This is actually a knowledge panel link
                 }
             }
             return true; // This is a true organic result
         });
         
         console.log(`After filtering, found ${trueOrganicElements.length} true organic result elements`);
-        processCategoryElements(trueOrganicElements, links, 'organic', processedUrls, sitelinkContainers);
+        processCategoryElements(trueOrganicElements, links, 'organic', processedUrls, sitelinkContainers, knowledgePanelContainers);
         
         // === Fallback for any missed links ===
         if (links.length === 0) {
@@ -82,7 +107,7 @@ function extractLinksFromPage() {
             // Last resort - try to get all external links
             const fallbackElements = document.querySelectorAll('a[href^="http"]:not([href*="google"])');
             console.log(`Found ${fallbackElements.length} elements with fallback selector`);
-            processCategoryElements(fallbackElements, links, 'organic', processedUrls, sitelinkContainers);
+            processCategoryElements(fallbackElements, links, 'organic', processedUrls, sitelinkContainers, knowledgePanelContainers);
         }
         
         console.log(`Extracted ${links.length} unique links from the page`);
@@ -102,7 +127,7 @@ function extractLinksFromPage() {
 }
 
 // Helper function to process elements by category and add them to links array
-function processCategoryElements(elements, links, category, processedUrls, sitelinkContainers) {
+function processCategoryElements(elements, links, category, processedUrls, sitelinkContainers, knowledgePanelContainers) {
     elements.forEach((element) => {
         const href = element.getAttribute('href');
         
@@ -123,8 +148,19 @@ function processCategoryElements(elements, links, category, processedUrls, sitel
         // Additional category validation to ensure correct categorization
         let finalCategory = category;
         
-        // Check if this is actually a sitelink (even if categorized as organic or another type)
-        if (category !== 'sitelinks' && sitelinkContainers) {
+        // Check if this is actually a knowledge panel link
+        if (category !== 'kp' && knowledgePanelContainers) {
+            for (const container of knowledgePanelContainers) {
+                if (container.contains(element)) {
+                    console.log(`Recategorizing link as knowledge panel: ${href}`);
+                    finalCategory = 'kp';
+                    break;
+                }
+            }
+        }
+        
+        // Only check for sitelinks if not already categorized as knowledge panel
+        if (finalCategory !== 'kp' && category !== 'sitelinks' && sitelinkContainers) {
             // Check if this element is contained within any of our sitelink containers
             for (const container of sitelinkContainers) {
                 if (container.contains(element)) {
@@ -136,7 +172,7 @@ function processCategoryElements(elements, links, category, processedUrls, sitel
         }
         
         // Check if this might be a place listing that was missed
-        if (category !== 'places' && 
+        if (finalCategory !== 'kp' && finalCategory !== 'sitelinks' && category !== 'places' && 
             (element.closest('.dbg0pd') || 
              element.closest('[data-local-attribute]') || 
              element.closest('div[jscontroller="LdB9sd"]') ||
@@ -185,6 +221,23 @@ function processCategoryElements(elements, links, category, processedUrls, sitel
                     title = sitelinkParent.innerText || sitelinkParent.textContent;
                 }
             }
+        } else if (finalCategory === 'kp') {
+            // Knowledge panel title extraction
+            title = element.innerText || element.textContent;
+            
+            // If no direct title, try to get it from parent elements
+            if (!title || title.trim() === '') {
+                const kpParent = element.closest('div[data-attrid], div[data-md], .kno-kp');
+                if (kpParent) {
+                    // Try to find a heading or title element
+                    const heading = kpParent.querySelector('h2, h3, [role="heading"]');
+                    if (heading) {
+                        title = heading.innerText || heading.textContent;
+                    } else {
+                        title = kpParent.innerText || kpParent.textContent;
+                    }
+                }
+            }
         }
         
         // If no title found with category-specific methods, try general methods
@@ -217,7 +270,7 @@ function processCategoryElements(elements, links, category, processedUrls, sitel
         });
         
         // Log for debugging specific categories
-        if (finalCategory === 'sitelinks' || finalCategory === 'places') {
+        if (finalCategory === 'sitelinks' || finalCategory === 'places' || finalCategory === 'kp') {
             console.log(`Added ${finalCategory} link: ${title.trim()} - ${href}`);
         }
     });
