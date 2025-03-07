@@ -217,29 +217,47 @@ async function extractLinks(query, startPage = 1) {
                 const category = link.category || 'organic';
                 
                 // Always include organic results
-                if (category === 'organic') {
+                if (category === 'organic' || category === 'featured') {
                     return true;
                 }
                 
-                // Explicitly check each category by name to avoid any issues
-                if (category === 'paa' && includedCategories.paa === true) {
-                    return true;
+                // Handle sitelinks based on preference (strict check)
+                if (category === 'sitelinks') {
+                    return includedCategories.sitelinks === true;
                 }
                 
-                if (category === 'places' && includedCategories.places === true) {
-                    return true;
+                // Handle Places based on preference (strict check)
+                if (category === 'places') {
+                    return includedCategories.places === true;
                 }
                 
-                if (category === 'sitelinks' && includedCategories.sitelinks === true) {
-                    return true;
+                // Handle PAA based on preference (strict check)
+                if (category === 'paa') {
+                    return includedCategories.paa === true;
                 }
                 
-                // All other categories are excluded
+                // Exclude any other categories by default
                 return false;
             });
             
             console.log(`Keeping ${filteredLinks.length} links out of ${links.length} after applying inclusion preferences`);
             console.log('Current inclusion settings:', includedCategories);
+            
+            // Log detailed category breakdown for debugging
+            const beforeCategories = {};
+            links.forEach(link => {
+                const cat = link.category || 'organic';
+                beforeCategories[cat] = (beforeCategories[cat] || 0) + 1;
+            });
+            console.log('Before filtering categories:', beforeCategories);
+            
+            const afterCategories = {};
+            filteredLinks.forEach(link => {
+                const cat = link.category || 'organic';
+                afterCategories[cat] = (afterCategories[cat] || 0) + 1;
+            });
+            console.log('After filtering categories:', afterCategories);
+            
             allLinks = allLinks.concat(filteredLinks);
             
             // Add a random delay between page navigations to avoid detection

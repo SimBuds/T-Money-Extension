@@ -7,28 +7,52 @@ function extractLinksFromPage() {
         const links = [];
         const processedUrls = new Set(); // Track processed URLs to avoid duplicates
         
+        // Collect all sitelink containers first to check against later
+        // This helps prevent sitelinks from being categorized as organic results
+        const sitelinkContainers = new Set();
+        document.querySelectorAll(
+            'div.usJj9c, div.fl, table.AaVjTc, div.St3GK, div.KGu9hc, div.byrV5b, ' +
+            '.hlcw0c div table, div.YkJ0Xd, div.FxLDp, div.v5jHUb, g-inner-card, ' +
+            'div.oIk2Cb, .kno-kp:not(.ruhjFe), div[data-sncf], div.IThcWe div[data-mt]'
+        ).forEach(container => sitelinkContainers.add(container));
+        
+        console.log(`Identified ${sitelinkContainers.size} potential sitelink containers`);
+        
         // === People also ask section ===
         const peopleAlsoAskElements = document.querySelectorAll('div.related-question-pair a[href]');
         console.log(`Found ${peopleAlsoAskElements.length} 'People also ask' elements`);
-        processCategoryElements(peopleAlsoAskElements, links, 'paa', processedUrls);
+        processCategoryElements(peopleAlsoAskElements, links, 'paa', processedUrls, sitelinkContainers);
         
         // === Places/Maps section ===
-        const placesElements = document.querySelectorAll('div.VkpGBb a[href], div.cXedhc a[href], div.rllt__details a[href], div[data-local-attribute] a[href]');
+        // Updated selector for places elements to be more comprehensive
+        const placesElements = document.querySelectorAll(
+            'div.VkpGBb a[href], div.cXedhc a[href], div.rllt__details a[href], ' + 
+            'div[data-local-attribute] a[href], div.dcuivd a[href], div.local-container a[href], ' +
+            'div[data-hveid] div.rllt a[href], div.dbg0pd a[href], div[jscontroller="LdB9sd"] a[href]'
+        );
         console.log(`Found ${placesElements.length} 'Places' elements`);
-        processCategoryElements(placesElements, links, 'places', processedUrls);
+        processCategoryElements(placesElements, links, 'places', processedUrls, sitelinkContainers);
         
         // === Sitelinks ===
-        const sitelinksElements = document.querySelectorAll('div.usJj9c a[href], div.fl a[href], table.AaVjTc a[href], div.St3GK a[href], div.KGu9hc a[href], div.byrV5b a[href], .hlcw0c div table a[href]');
+        // Updated selector to include more potential sitelink patterns
+        const sitelinksElements = document.querySelectorAll(
+            'div.usJj9c a[href], div.fl a[href], table.AaVjTc a[href], div.St3GK a[href], ' +
+            'div.KGu9hc a[href], div.byrV5b a[href], .hlcw0c div table a[href], ' + 
+            'div.YkJ0Xd a[href], div.FxLDp a[href], div.v5jHUb a[href], ' +
+            'g-inner-card a[href], div.oIk2Cb a[href], .kno-kp a[href]:not(.ruhjFe), ' +
+            'div[data-sncf] a[href], div.IThcWe div[data-mt] a[href]'
+        );
         console.log(`Found ${sitelinksElements.length} sitelink elements`);
-        processCategoryElements(sitelinksElements, links, 'sitelinks', processedUrls);
+        processCategoryElements(sitelinksElements, links, 'sitelinks', processedUrls, sitelinkContainers);
         
         // === Featured snippets (now categorized as organic) ===
-        const featuredElements = document.querySelectorAll('div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], div.IThcWe a[href]');
+        const featuredElements = document.querySelectorAll('div.V3FYCf a[href], div.ruhjFe a[href], div[role="heading"] + div a[href], div.IThcWe a[href]:not([data-mt])');
         console.log(`Found ${featuredElements.length} featured snippet elements (categorized as organic)`);
-        processCategoryElements(featuredElements, links, 'organic', processedUrls);
+        processCategoryElements(featuredElements, links, 'organic', processedUrls, sitelinkContainers);
         
         // === Main organic results ===
         // Use more specific selectors to avoid overlap with other categories
+        // Added :not() exclusions to avoid picking up elements already categorized
         const organicSelectors = [
             'div#search div.g a[href]:not(.fl):not([data-local-attribute])',
             'div#search div.yuRUbf a[href]:not(.fl):not([data-local-attribute])',
@@ -36,8 +60,21 @@ function extractLinksFromPage() {
             'div#search div.tF2Cxc a[href]:not(.fl):not([data-local-attribute])'
         ].join(', ');
         const organicElements = document.querySelectorAll(organicSelectors);
-        console.log(`Found ${organicElements.length} organic result elements`);
-        processCategoryElements(organicElements, links, 'organic', processedUrls);
+        console.log(`Found ${organicElements.length} potential organic result elements`);
+        
+        // Filter out elements that are within sitelink containers
+        const trueOrganicElements = Array.from(organicElements).filter(element => {
+            // Check if this element is within any of our identified sitelink containers
+            for (const container of sitelinkContainers) {
+                if (container.contains(element)) {
+                    return false; // This is actually a sitelink
+                }
+            }
+            return true; // This is a true organic result
+        });
+        
+        console.log(`After filtering, found ${trueOrganicElements.length} true organic result elements`);
+        processCategoryElements(trueOrganicElements, links, 'organic', processedUrls, sitelinkContainers);
         
         // === Fallback for any missed links ===
         if (links.length === 0) {
@@ -45,7 +82,7 @@ function extractLinksFromPage() {
             // Last resort - try to get all external links
             const fallbackElements = document.querySelectorAll('a[href^="http"]:not([href*="google"])');
             console.log(`Found ${fallbackElements.length} elements with fallback selector`);
-            processCategoryElements(fallbackElements, links, 'organic', processedUrls);
+            processCategoryElements(fallbackElements, links, 'organic', processedUrls, sitelinkContainers);
         }
         
         console.log(`Extracted ${links.length} unique links from the page`);
@@ -65,7 +102,7 @@ function extractLinksFromPage() {
 }
 
 // Helper function to process elements by category and add them to links array
-function processCategoryElements(elements, links, category, processedUrls) {
+function processCategoryElements(elements, links, category, processedUrls, sitelinkContainers) {
     elements.forEach((element) => {
         const href = element.getAttribute('href');
         
@@ -83,6 +120,31 @@ function processCategoryElements(elements, links, category, processedUrls) {
             return;
         }
         
+        // Additional category validation to ensure correct categorization
+        let finalCategory = category;
+        
+        // Check if this is actually a sitelink (even if categorized as organic or another type)
+        if (category !== 'sitelinks' && sitelinkContainers) {
+            // Check if this element is contained within any of our sitelink containers
+            for (const container of sitelinkContainers) {
+                if (container.contains(element)) {
+                    console.log(`Recategorizing link as sitelink: ${href}`);
+                    finalCategory = 'sitelinks';
+                    break;
+                }
+            }
+        }
+        
+        // Check if this might be a place listing that was missed
+        if (category !== 'places' && 
+            (element.closest('.dbg0pd') || 
+             element.closest('[data-local-attribute]') || 
+             element.closest('div[jscontroller="LdB9sd"]') ||
+             element.closest('div.local-container'))) {
+            console.log(`Recategorizing link as place: ${href}`);
+            finalCategory = 'places';
+        }
+        
         // Mark URL as processed
         processedUrls.add(href);
         
@@ -90,7 +152,7 @@ function processCategoryElements(elements, links, category, processedUrls) {
         let title = '';
         
         // Handle specific category title extraction
-        if (category === 'paa') {
+        if (finalCategory === 'paa') {
             // For "People also ask" questions
             const questionParent = element.closest('.related-question-pair');
             if (questionParent) {
@@ -99,15 +161,29 @@ function processCategoryElements(elements, links, category, processedUrls) {
                     title = questionDiv.textContent || '';
                 }
             }
-        } else if (category === 'places') {
+        } else if (finalCategory === 'places') {
             // For places, try to get the business name
             const placeName = element.closest('.dbg0pd') || 
                              element.closest('[data-local-attribute="d3ph"]') ||
+                             element.closest('[data-text-ad]') ||
+                             element.closest('.rllt') ||
                              element.querySelector('.dbg0pd') ||
                              element.parentElement.querySelector('.dbg0pd');
             
             if (placeName) {
                 title = placeName.innerText || placeName.textContent;
+            }
+        } else if (finalCategory === 'sitelinks') {
+            // Improved sitelinks title extraction
+            // First try to get the direct text from the element
+            title = element.innerText || element.textContent;
+            
+            // If no title and element is within a specific sitelinks container, try parent
+            if (!title || title.trim() === '') {
+                const sitelinkParent = element.closest('div.YkJ0Xd, div.FxLDp, div.v5jHUb, g-inner-card, div.oIk2Cb, div[data-sncf], [data-mt]');
+                if (sitelinkParent) {
+                    title = sitelinkParent.innerText || sitelinkParent.textContent;
+                }
             }
         }
         
@@ -137,8 +213,13 @@ function processCategoryElements(elements, links, category, processedUrls) {
         links.push({
             url: href,
             title: title.trim(),
-            category: category
+            category: finalCategory
         });
+        
+        // Log for debugging specific categories
+        if (finalCategory === 'sitelinks' || finalCategory === 'places') {
+            console.log(`Added ${finalCategory} link: ${title.trim()} - ${href}`);
+        }
     });
 }
 

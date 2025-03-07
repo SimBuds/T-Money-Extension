@@ -210,24 +210,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const category = link.category || 'organic';
             
             // Always include organic results
-            if (category === 'organic') {
+            if (category === 'organic' || category === 'featured') {
                 return true;
             }
             
-            // Explicitly check each category by name
-            if (category === 'paa' && includedCategories.paa === true) {
-                return true;
+            // Handle sitelinks based on preference (strict check)
+            if (category === 'sitelinks') {
+                return includedCategories.sitelinks === true;
             }
             
-            if (category === 'places' && includedCategories.places === true) {
-                return true;
+            // Handle Places based on preference (strict check)
+            if (category === 'places') {
+                return includedCategories.places === true;
             }
             
-            if (category === 'sitelinks' && includedCategories.sitelinks === true) {
-                return true;
+            // Handle PAA based on preference (strict check)
+            if (category === 'paa') {
+                return includedCategories.paa === true;
             }
             
-            // All other categories are excluded
+            // Exclude any other categories by default
             return false;
         });
         
