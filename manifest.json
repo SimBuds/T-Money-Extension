@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
     "name": "TMoney Extensions",
-    "version": "0.2",
-    "description": "Extension for the SEO needs of the BMO Team.",
-    "author": "Casey",
+    "version": "0.5",
+    "description": "An SEO Extension for the needs of the BMO Team.",
+    "author": "Casey Hsu",
     "homepage_url": "https://caseyhsu.me/",
     "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
     "host_permissions": ["*://*.google.com/*"],
